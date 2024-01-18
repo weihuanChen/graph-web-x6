@@ -1,10 +1,12 @@
 <script lang="ts" setup>
 import { Graph, Shape } from '@antv/x6';
-import { onMounted, onUnmounted, ref,provide } from 'vue';
-
+import { onMounted, onUnmounted, ref, provide, reactive } from 'vue';
+import { GraphEditor } from '@/graph'
+import Transform from '@/components/Transform.vue'
 /** 画布组件，初始化画布 */
 const containerRef = ref(ref)
 let graph: Graph | null = null;
+const canvasEditor = new GraphEditor();
 // json反序列化节点
 const data = {
   nodes: [
@@ -63,7 +65,10 @@ const rect = new Shape.Rect({
     },
   },
 })
-const initX6 = ()=> {
+const showState = reactive({
+  show:false
+})
+const initX6 = async () => {
   graph = new Graph({
     container: document.getElementById('container') as HTMLElement,
     autoResize: true,
@@ -86,23 +91,27 @@ const initX6 = ()=> {
       ],
     },
   })
+  canvasEditor._init(graph);
+  // 反序列化
   graph.fromJSON(data)
   graph.centerContent()
 }
-
-provide('X6Graph',graph)
 onUnmounted(() => {
   graph?.dispose() // 销毁
 })
-onMounted(() => {
-  initX6()
+onMounted(async () => {
+  await initX6()
+  showState.show = true
   graph?.addNode(rect)
 })
+// 控制器传下去
+provide('canvasEditor', canvasEditor)
 </script>
 <template>
   <div class="auto-resize-app" style="width:100%; height:100%">
     <div id="container" class="app-content" ref="containerRef">
     </div>
+    <Transform v-if="showState.show"></Transform>
   </div>
 </template>
 <style lang="less">
